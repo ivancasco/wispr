@@ -1,5 +1,5 @@
 //
-//  WhisperModelInfo.swift
+//  ModelInfo.swift
 //  wispr
 //
 //  Created by Kiro
@@ -7,8 +7,8 @@
 
 import Foundation
 
-/// Information about a Whisper model
-struct WhisperModelInfo: Identifiable, Sendable, Equatable {
+/// Information about a transcription model
+struct ModelInfo: Identifiable, Sendable, Equatable {
     let id: String              // e.g. "tiny"
     let displayName: String     // e.g. "Tiny"
     let sizeDescription: String // e.g. "~75 MB"
