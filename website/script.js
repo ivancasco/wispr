@@ -218,6 +218,10 @@ if (slides.length > 0 && track && dotsContainer && prevBtn && nextBtn) {
     // Auto-advance carousel
     let autoAdvanceInterval;
     function startAutoAdvance() {
+        // Clear any existing interval before starting a new one
+        if (autoAdvanceInterval) {
+            clearInterval(autoAdvanceInterval);
+        }
         autoAdvanceInterval = setInterval(() => {
             if (currentSlide < totalSlides - 1) {
                 nextSlide();
@@ -229,7 +233,10 @@ if (slides.length > 0 && track && dotsContainer && prevBtn && nextBtn) {
     }
 
     function stopAutoAdvance() {
-        clearInterval(autoAdvanceInterval);
+        if (autoAdvanceInterval) {
+            clearInterval(autoAdvanceInterval);
+            autoAdvanceInterval = null;
+        }
     }
 
     // Start/stop auto-advance based on visibility
