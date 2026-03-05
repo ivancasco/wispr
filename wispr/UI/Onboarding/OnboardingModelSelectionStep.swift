@@ -3,7 +3,7 @@
 //  wispr
 //
 //  Model selection step for the onboarding flow.
-//  Reuses ModelRowView from ModelManagementView for visual consistency.
+//  Reuses ModelRowView from UI/Components for visual consistency.
 //  Requirements: 13.6, 13.7, 13.8, 13.15
 //
 
