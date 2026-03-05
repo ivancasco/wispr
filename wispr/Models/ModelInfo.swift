@@ -7,7 +7,7 @@
 
 import Foundation
 
-/// Information about a Whisper model
+/// Information about a transcription model
 struct ModelInfo: Identifiable, Sendable, Equatable {
     let id: String              // e.g. "tiny"
     let displayName: String     // e.g. "Tiny"

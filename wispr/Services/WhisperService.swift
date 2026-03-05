@@ -629,13 +629,16 @@ extension WhisperService: TranscriptionEngine {
     ) -> AsyncThrowingStream<TranscriptionResult, Error> {
         let (stream, continuation) = AsyncThrowingStream.makeStream(of: TranscriptionResult.self)
 
-        Task {
+        let task = Task {
             do {
                 // Accumulate all audio chunks into a single buffer
                 var allSamples: [Float] = []
                 for await chunk in audioStream {
+                    try Task.checkCancellation()
                     allSamples.append(contentsOf: chunk)
                 }
+
+                try Task.checkCancellation()
 
                 // Delegate to the batch transcription method
                 let result = try await self.transcribe(allSamples, language: language)
@@ -644,6 +647,10 @@ extension WhisperService: TranscriptionEngine {
             } catch {
                 continuation.finish(throwing: error)
             }
+        }
+
+        continuation.onTermination = { _ in
+            task.cancel()
         }
 
         return stream

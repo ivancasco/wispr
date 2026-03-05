@@ -51,7 +51,7 @@ final class MenuBarController {
     private let audioEngine: AudioEngine
 
     /// Transcription engine for settings and model management views.
-    private let whisperService: any TranscriptionEngine
+    private let transcriptionEngine: any TranscriptionEngine
 
     /// Permission manager for settings view.
     private let permissionManager: PermissionManager
@@ -97,7 +97,7 @@ final class MenuBarController {
         self.settingsStore = settingsStore
         self.themeEngine = themeEngine
         self.audioEngine = audioEngine
-        self.whisperService = whisperService
+        self.transcriptionEngine = whisperService
         self.permissionManager = permissionManager
 
         // Requirement 5.1: Create NSStatusItem in the menu bar
@@ -430,7 +430,7 @@ final class MenuBarController {
 
         let settingsView = SettingsView(
             audioEngine: audioEngine,
-            whisperService: whisperService
+            whisperService: transcriptionEngine
         )
         .environment(settingsStore)
         .environment(themeEngine)
@@ -459,7 +459,7 @@ final class MenuBarController {
             return
         }
 
-        let modelView = ModelManagementView(whisperService: whisperService)
+        let modelView = ModelManagementView(whisperService: transcriptionEngine)
             .environment(settingsStore)
             .environment(themeEngine)
             .environment(stateManager)
