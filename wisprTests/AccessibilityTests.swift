@@ -24,8 +24,8 @@ struct AccessibilityLabelGenerationTests {
     /// Mirrors RecordingOverlayView.accessibilityLabelForState
     private func overlayAccessibilityLabel(for state: AppStateType) -> String {
         switch state {
-        case .loading(let message):
-            message
+        case .loading:
+            "Loading"
         case .recording:
             "Recording in progress"
         case .processing:

@@ -67,8 +67,8 @@ struct RecordingOverlayView: View {
     @ViewBuilder
     private var overlayContent: some View {
         switch stateManager.appState {
-        case .loading(let message):
-            loadingContent(message: message)
+        case .loading:
+            loadingContent
         case .recording:
             recordingContent
         case .processing:
@@ -80,14 +80,14 @@ struct RecordingOverlayView: View {
         }
     }
     
-    /// Loading state: spinner + message.
-    private func loadingContent(message: String) -> some View {
+    /// Loading state: spinner + label.
+    private var loadingContent: some View {
         HStack(spacing: 12) {
             ProgressView()
                 .controlSize(.small)
                 .accessibilityHidden(true)
 
-            Text(message)
+            Text("Loading…")
                 .font(.callout)
                 .foregroundStyle(theme.primaryTextColor)
         }
@@ -254,8 +254,8 @@ struct RecordingOverlayView: View {
 
     private var accessibilityLabelForState: String {
         switch stateManager.appState {
-        case .loading(let message):
-            message
+        case .loading:
+            "Loading"
         case .recording:
             "Recording in progress"
         case .processing:

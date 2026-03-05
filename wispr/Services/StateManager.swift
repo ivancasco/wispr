@@ -27,7 +27,7 @@ final class StateManager {
     // MARK: - Published State
 
     /// Current application state driving UI updates.
-    var appState: AppStateType = .loading("Initializing...")
+    var appState: AppStateType = .loading
 
     /// Current error message displayed to the user, if any.
     var errorMessage: String?
@@ -154,21 +154,8 @@ final class StateManager {
         // Only allow starting a new recording from the idle state.
         // Ignore the request if already recording, processing, showing an error, or still loading.
         guard appState == .idle else {
-            // If still loading, show a brief message
-            if case .loading = appState {
-                Log.stateManager.debug("beginRecording — app still loading model, showing message")
-                let previousState = appState
-                appState = .error("App is loading, please wait...")
-                errorMessage = "App is loading, please wait..."
-                
-                // Auto-dismiss after 2 seconds and return to loading state
-                errorDismissTask?.cancel()
-                errorDismissTask = Task { @MainActor [weak self] in
-                    try? await Task.sleep(for: .seconds(2))
-                    guard let self else { return }
-                    self.appState = previousState
-                    self.errorMessage = nil
-                }
+            if appState == .loading {
+                Log.stateManager.debug("beginRecording — still loading, ignoring hotkey")
             }
             return
         }
@@ -398,9 +385,38 @@ final class StateManager {
     /// Marks the app as ready after model loading completes.
     /// Transitions from `.loading` to `.idle`.
     func markAsReady() {
-        if case .loading = appState {
+        if appState == .loading {
             appState = .idle
             Log.stateManager.debug("markAsReady — app ready for dictation")
+        }
+    }
+
+    /// Loads the persisted active model at startup.
+    ///
+    /// Transitions `.loading` → `.idle` on success, or `.loading` → `.error` → `.idle`
+    /// on failure (auto-dismisses after 5 seconds so the app remains usable).
+    func loadActiveModel() async {
+        let modelName = settingsStore.activeModelName
+        guard !modelName.isEmpty else {
+            markAsReady()
+            return
+        }
+        appState = .loading
+        do {
+            Log.stateManager.debug("loadActiveModel — loading '\(modelName)'")
+            try await whisperService.loadModel(modelName)
+            Log.stateManager.debug("loadActiveModel — '\(modelName)' loaded successfully")
+            markAsReady()
+        } catch {
+            Log.stateManager.error("loadActiveModel — failed to load '\(modelName)': \(error.localizedDescription)")
+            appState = .error("Failed to load model — open Model Management to fix")
+            errorMessage = "Failed to load model — open Model Management to fix"
+            // Auto-dismiss to idle after 5 seconds so the app remains usable
+            try? await Task.sleep(for: .seconds(5))
+            if case .error = appState {
+                appState = .idle
+                errorMessage = nil
+            }
         }
     }
 }
