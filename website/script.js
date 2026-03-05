@@ -28,23 +28,16 @@ async function fetchLatestRelease() {
             const asset = data.assets.find(a => a.name.endsWith('.dmg') || a.name.endsWith('.pkg')) || data.assets[0];
             const downloadUrl = asset.browser_download_url;
             
-            // Update main download button
-            downloadLink.href = downloadUrl;
-            downloadText.textContent = `Download ${data.tag_name}`;
-            versionInfo.textContent = `Latest: ${data.tag_name} • ${(asset.size / 1024 / 1024).toFixed(1)} MB`;
-            
-            // Update footer download link
-            if (footerDownloadLink) {
-                footerDownloadLink.href = downloadUrl;
-            }
+            // Update main download button (with null checks)
+            if (downloadLink) downloadLink.href = downloadUrl;
+            if (downloadText) downloadText.textContent = `Download ${data.tag_name}`;
+            if (versionInfo) versionInfo.textContent = `Latest: ${data.tag_name} • ${(asset.size / 1024 / 1024).toFixed(1)} MB`;
+            if (footerDownloadLink) footerDownloadLink.href = downloadUrl;
         } else {
-            downloadLink.href = data.html_url;
-            downloadText.textContent = `View ${data.tag_name} on GitHub`;
-            versionInfo.textContent = `Latest: ${data.tag_name}`;
-            
-            if (footerDownloadLink) {
-                footerDownloadLink.href = data.html_url;
-            }
+            if (downloadLink) downloadLink.href = data.html_url;
+            if (downloadText) downloadText.textContent = `View ${data.tag_name} on GitHub`;
+            if (versionInfo) versionInfo.textContent = `Latest: ${data.tag_name}`;
+            if (footerDownloadLink) footerDownloadLink.href = data.html_url;
         }
     } catch (error) {
         console.error('Failed to fetch latest release:', error);
@@ -53,12 +46,9 @@ async function fetchLatestRelease() {
         const footerDownloadLink = document.querySelector('.footer-links a[href*="releases"]');
         
         const fallbackUrl = 'https://github.com/sebsto/wispr/releases/latest';
-        downloadLink.href = fallbackUrl;
-        versionInfo.textContent = 'View releases on GitHub';
-        
-        if (footerDownloadLink) {
-            footerDownloadLink.href = fallbackUrl;
-        }
+        if (downloadLink) downloadLink.href = fallbackUrl;
+        if (versionInfo) versionInfo.textContent = 'View releases on GitHub';
+        if (footerDownloadLink) footerDownloadLink.href = fallbackUrl;
     }
 }
 
@@ -131,162 +121,184 @@ document.querySelectorAll('.screenshot-item').forEach((item, index) => {
     item.style.transitionDelay = `${index * 0.15}s`;
 });
 
-// Onboarding Carousel
-let currentSlide = 0;
+// Onboarding Carousel - Only initialize if elements exist
 const slides = document.querySelectorAll('.onboarding-slide');
-const totalSlides = slides.length;
 const track = document.querySelector('.carousel-track');
 const dotsContainer = document.querySelector('.carousel-dots');
 const prevBtn = document.querySelector('.carousel-btn.prev');
 const nextBtn = document.querySelector('.carousel-btn.next');
 
-// Create dots
-for (let i = 0; i < totalSlides; i++) {
-    const dot = document.createElement('button');
-    dot.classList.add('carousel-dot');
-    if (i === 0) dot.classList.add('active');
-    dot.setAttribute('aria-label', `Go to slide ${i + 1}`);
-    dot.addEventListener('click', () => goToSlide(i));
-    dotsContainer.appendChild(dot);
-}
+if (slides.length > 0 && track && dotsContainer && prevBtn && nextBtn) {
+    let currentSlide = 0;
+    const totalSlides = slides.length;
 
-const dots = document.querySelectorAll('.carousel-dot');
+    // Create dots
+    for (let i = 0; i < totalSlides; i++) {
+        const dot = document.createElement('button');
+        dot.classList.add('carousel-dot');
+        if (i === 0) dot.classList.add('active');
+        dot.setAttribute('aria-label', `Go to slide ${i + 1}`);
+        dot.addEventListener('click', () => goToSlide(i));
+        dotsContainer.appendChild(dot);
+    }
 
-function updateCarousel() {
-    const slideWidth = slides[0].offsetWidth;
-    const gap = 32; // 2rem gap
-    const offset = currentSlide * (slideWidth + gap);
-    track.style.transform = `translateX(-${offset}px)`;
-    
-    // Update dots
-    dots.forEach((dot, index) => {
-        dot.classList.toggle('active', index === currentSlide);
-    });
-    
-    // Update button states
-    prevBtn.disabled = currentSlide === 0;
-    nextBtn.disabled = currentSlide === totalSlides - 1;
-}
+    const dots = document.querySelectorAll('.carousel-dot');
 
-function goToSlide(index) {
-    currentSlide = Math.max(0, Math.min(index, totalSlides - 1));
-    updateCarousel();
-}
+    function updateCarousel() {
+        if (!track || slides.length === 0) return;
+        
+        const slideWidth = slides[0].offsetWidth;
+        const gap = 32; // 2rem gap
+        const offset = currentSlide * (slideWidth + gap);
+        track.style.transform = `translateX(-${offset}px)`;
+        
+        // Update dots
+        dots.forEach((dot, index) => {
+            dot.classList.toggle('active', index === currentSlide);
+        });
+        
+        // Update button states
+        if (prevBtn) prevBtn.disabled = currentSlide === 0;
+        if (nextBtn) nextBtn.disabled = currentSlide === totalSlides - 1;
+    }
 
-function nextSlide() {
-    if (currentSlide < totalSlides - 1) {
-        currentSlide++;
+    function goToSlide(index) {
+        currentSlide = Math.max(0, Math.min(index, totalSlides - 1));
         updateCarousel();
     }
-}
 
-function prevSlide() {
-    if (currentSlide > 0) {
-        currentSlide--;
-        updateCarousel();
-    }
-}
-
-prevBtn.addEventListener('click', prevSlide);
-nextBtn.addEventListener('click', nextSlide);
-
-// Keyboard navigation for carousel
-document.addEventListener('keydown', (e) => {
-    const carousel = document.querySelector('.onboarding-carousel');
-    if (!carousel) return;
-    
-    const rect = carousel.getBoundingClientRect();
-    const isInView = rect.top >= 0 && rect.bottom <= window.innerHeight;
-    
-    if (isInView) {
-        if (e.key === 'ArrowLeft') {
-            e.preventDefault();
-            prevSlide();
-        } else if (e.key === 'ArrowRight') {
-            e.preventDefault();
-            nextSlide();
-        }
-    }
-});
-
-// Auto-advance carousel (optional)
-let autoAdvanceInterval;
-function startAutoAdvance() {
-    autoAdvanceInterval = setInterval(() => {
+    function nextSlide() {
         if (currentSlide < totalSlides - 1) {
-            nextSlide();
-        } else {
-            currentSlide = 0;
+            currentSlide++;
             updateCarousel();
         }
-    }, 5000);
-}
+    }
 
-function stopAutoAdvance() {
-    clearInterval(autoAdvanceInterval);
-}
+    function prevSlide() {
+        if (currentSlide > 0) {
+            currentSlide--;
+            updateCarousel();
+        }
+    }
 
-// Start auto-advance when carousel is in view
-const carouselObserver = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-        if (entry.isIntersecting) {
-            startAutoAdvance();
-        } else {
-            stopAutoAdvance();
+    prevBtn.addEventListener('click', prevSlide);
+    nextBtn.addEventListener('click', nextSlide);
+
+    // Track if carousel is in view for keyboard navigation
+    let carouselInView = false;
+    const carouselObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            carouselInView = entry.isIntersecting;
+        });
+    }, { threshold: 0.5 });
+
+    const carousel = document.querySelector('.onboarding-carousel');
+    if (carousel) {
+        carouselObserver.observe(carousel);
+    }
+
+    // Keyboard navigation for carousel (only when in view)
+    document.addEventListener('keydown', (e) => {
+        if (carouselInView && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
+            e.preventDefault();
+            if (e.key === 'ArrowLeft') {
+                prevSlide();
+            } else if (e.key === 'ArrowRight') {
+                nextSlide();
+            }
         }
     });
-}, { threshold: 0.5 });
 
-const carousel = document.querySelector('.onboarding-carousel');
-if (carousel) {
-    carouselObserver.observe(carousel);
-    
-    // Stop auto-advance on user interaction
-    carousel.addEventListener('click', stopAutoAdvance);
-    carousel.addEventListener('touchstart', stopAutoAdvance);
+    // Auto-advance carousel
+    let autoAdvanceInterval;
+    function startAutoAdvance() {
+        autoAdvanceInterval = setInterval(() => {
+            if (currentSlide < totalSlides - 1) {
+                nextSlide();
+            } else {
+                currentSlide = 0;
+                updateCarousel();
+            }
+        }, 5000);
+    }
+
+    function stopAutoAdvance() {
+        clearInterval(autoAdvanceInterval);
+    }
+
+    // Start/stop auto-advance based on visibility
+    const autoAdvanceObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                startAutoAdvance();
+            } else {
+                stopAutoAdvance();
+            }
+        });
+    }, { threshold: 0.5 });
+
+    if (carousel) {
+        autoAdvanceObserver.observe(carousel);
+        carousel.addEventListener('click', stopAutoAdvance);
+        carousel.addEventListener('touchstart', stopAutoAdvance);
+    }
+
+    // Update carousel on window resize (throttled)
+    let resizeTimeout;
+    window.addEventListener('resize', () => {
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(updateCarousel, 150);
+    });
 }
 
-// Update carousel on window resize
-window.addEventListener('resize', updateCarousel);
+// Consolidated scroll handler with requestAnimationFrame throttling
+let scrollTicking = false;
 
-// Hide scroll indicator when user scrolls
-let scrollTimeout;
-const scrollIndicator = document.querySelector('.scroll-indicator');
-
-window.addEventListener('scroll', () => {
-    if (scrollIndicator && window.scrollY > 100) {
-        scrollIndicator.style.opacity = '0';
-        scrollIndicator.style.pointerEvents = 'none';
-    } else if (scrollIndicator) {
-        scrollIndicator.style.opacity = '0.7';
-        scrollIndicator.style.pointerEvents = 'auto';
-    }
-});
-
-// Parallax effect for hero background
-window.addEventListener('scroll', () => {
-    const hero = document.querySelector('.hero');
-    if (hero) {
-        const scrolled = window.scrollY;
-        const heroHeight = hero.offsetHeight;
-        if (scrolled < heroHeight) {
-            hero.style.transform = `translateY(${scrolled * 0.5}px)`;
-            hero.style.opacity = 1 - (scrolled / heroHeight) * 0.5;
+function handleScroll() {
+    const scrollY = window.scrollY;
+    
+    // Hide scroll indicator when user scrolls
+    const scrollIndicator = document.querySelector('.scroll-indicator');
+    if (scrollIndicator) {
+        if (scrollY > 100) {
+            scrollIndicator.style.opacity = '0';
+            scrollIndicator.style.pointerEvents = 'none';
+        } else {
+            scrollIndicator.style.opacity = '0.7';
+            scrollIndicator.style.pointerEvents = 'auto';
         }
     }
+    
+    // Parallax effect for hero background
+    const hero = document.querySelector('.hero');
+    if (hero) {
+        const heroHeight = hero.offsetHeight;
+        if (scrollY < heroHeight) {
+            hero.style.transform = `translateY(${scrollY * 0.5}px)`;
+            hero.style.opacity = 1 - (scrollY / heroHeight) * 0.5;
+        }
+    }
+    
+    scrollTicking = false;
+}
+
+window.addEventListener('scroll', () => {
+    if (!scrollTicking) {
+        window.requestAnimationFrame(handleScroll);
+        scrollTicking = true;
+    }
 });
 
-// Add loading animation
-window.addEventListener('load', () => {
-    document.body.style.opacity = '0';
-    document.body.style.transition = 'opacity 0.5s ease';
-    setTimeout(() => {
-        document.body.style.opacity = '1';
-    }, 100);
-});
-
-// Keyboard navigation for sections
+// Section keyboard navigation (only when carousel not in view)
 document.addEventListener('keydown', (e) => {
+    // Skip if carousel is in view
+    const carousel = document.querySelector('.onboarding-carousel');
+    if (carousel) {
+        const rect = carousel.getBoundingClientRect();
+        const carouselVisible = rect.top >= -100 && rect.top <= window.innerHeight;
+        if (carouselVisible) return;
+    }
+    
     const sections = document.querySelectorAll('.section');
     const currentSection = Array.from(sections).findIndex(section => {
         const rect = section.getBoundingClientRect();
@@ -300,4 +312,13 @@ document.addEventListener('keydown', (e) => {
         e.preventDefault();
         sections[currentSection - 1].scrollIntoView({ behavior: 'smooth' });
     }
+});
+
+// Add loading animation
+window.addEventListener('load', () => {
+    document.body.style.opacity = '0';
+    document.body.style.transition = 'opacity 0.5s ease';
+    setTimeout(() => {
+        document.body.style.opacity = '1';
+    }, 100);
 });
