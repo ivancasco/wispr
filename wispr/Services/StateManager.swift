@@ -185,8 +185,12 @@ final class StateManager {
         // Now check if all permissions are granted
         guard permissionManager.allPermissionsGranted else {
             Log.stateManager.warning("beginRecording — permissions not granted, aborting")
-            // Permission was previously denied - open System Settings to help user fix it
-            await handleError(.microphonePermissionDenied)
+            // Permission was previously denied — open the appropriate System Settings pane
+            if permissionManager.microphoneStatus == .denied {
+                await handleError(.microphonePermissionDenied)
+            } else {
+                await handleError(.accessibilityPermissionDenied)
+            }
             return
         }
 
